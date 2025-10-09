@@ -36,6 +36,17 @@ CREATE TABLE IF NOT EXISTS account_mfa
     enabled    BOOLEAN    NOT NULL DEFAULT FALSE
 );
 
+-- Add backup codes table
+CREATE TABLE IF NOT EXISTS mfa_backup_code
+(
+    id         UUID PRIMARY KEY     DEFAULT gen_random_uuid(),
+    account_id UUID        NOT NULL REFERENCES account (id) ON DELETE CASCADE,
+    code_hash  TEXT        NOT NULL,
+    used       BOOLEAN     NOT NULL DEFAULT FALSE,
+    created_ts TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_mfa_backup_account ON mfa_backup_code (account_id);
+
 -- (Optional) Account preferences
 CREATE TABLE IF NOT EXISTS account_settings
 (
