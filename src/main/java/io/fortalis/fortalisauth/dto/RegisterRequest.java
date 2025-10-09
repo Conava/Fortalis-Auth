@@ -7,4 +7,8 @@ public record RegisterRequest(
         @NotBlank @Size(min = 8, max = 200) String password,
         @NotBlank @Size(min = 3, max = 32) String displayName
 ) {
+    public RegisterRequest {
+        email = email != null ? email.toLowerCase() : null;
+    }
 }
+

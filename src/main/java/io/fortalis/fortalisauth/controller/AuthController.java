@@ -8,12 +8,14 @@ import io.fortalis.fortalisauth.web.ApiException;
 import jakarta.validation.Valid;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 /**
  * Registration, login, refresh, logout.
  * The access token (JWT) sub=account_id is used by region servers.
  */
+@Slf4j
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -24,6 +26,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public AuthResponse register(@Valid @RequestBody RegisterRequest req) {
+        log.debug("Registering new account for email {}", req.email());
         Account a = accounts.register(req.email(), req.password(), req.displayName());
         var pair = tokens.issueTokens(a.getId());
         return new AuthResponse(pair.accessToken(), pair.refreshToken(), pair.expiresInSeconds());

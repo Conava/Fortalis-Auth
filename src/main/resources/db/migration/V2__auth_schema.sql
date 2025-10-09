@@ -8,11 +8,11 @@
 CREATE TABLE IF NOT EXISTS account
 (
     id             UUID PRIMARY KEY     DEFAULT gen_random_uuid(),
-    email          CITEXT UNIQUE, -- may be NULL for pure social
-    password_hash  TEXT,          -- Argon2id/bcrypt; NULL if social-only
+    email          VARCHAR(255) UNIQUE,
+    password_hash  TEXT,
     email_verified BOOLEAN     NOT NULL DEFAULT FALSE,
     created_ts     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    display_name   VARCHAR(32)    -- preferred username (not unique globally)
+    display_name   VARCHAR(32)
 );
 
 -- External or local identities mapped to one account

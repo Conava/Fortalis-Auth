@@ -19,26 +19,23 @@ public class Account {
     @GeneratedValue
     private UUID id;
 
-    /**
-     * Case-insensitive email (Postgres CITEXT).
-     */
-    @JdbcTypeCode(SqlTypes.OTHER)              // <-- tell Hibernate it's a non-standard type
-    @Column(columnDefinition = "citext")       // <-- matches the actual DB column type
+    @Column(unique = true, length = 255)
     private String email;
 
-    /**
-     * Argon2id/bcrypt hash; null for pure social.
-     */
     private String passwordHash;
-
     private boolean emailVerified;
-
     private Instant createdTs;
-
     private String displayName;
 
     @PrePersist
     void prePersist() {
         if (createdTs == null) createdTs = Instant.now();
+        if (email != null) email = email.toLowerCase(); // normalize to lowercase
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        if (email != null) email = email.toLowerCase();
     }
 }
+

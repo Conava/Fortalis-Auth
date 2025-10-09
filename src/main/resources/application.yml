@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: Fortalis-Auth
+  datasource:
+    url: jdbc:postgresql://localhost:5433/fortalis_auth
+    username: fortalis
+    password: fortalis
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+auth:
+  jwt:
+    issuer: https://auth.fortalis.game
+    access-ttl: PT15M
+    refresh-ttl: P30D
+    key-store: files
+    key-file-private: ./keys/fortalis_auth_private.pem
+    key-file-public: ./keys/fortalis_auth_public.pem
+
+logging:
+  level:
+    root: INFO
+    io.fortalis.fortalisauth: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
