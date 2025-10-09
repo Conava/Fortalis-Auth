@@ -127,8 +127,7 @@ Configure the App in `src/main/resources/application.properties`
 
 ```
 src/main/resources/db/migration/
-  V1__enable_extensions.sql       -- pgcrypto + citext
-  V2__auth_schema.sql             -- tables: account, account_identity, account_mfa, account_settings, refresh_token
+  V1__initial_auth_schema.sql             -- tables: account, account_identity, account_mfa, account_settings, refresh_token
 ```
 
 ---
