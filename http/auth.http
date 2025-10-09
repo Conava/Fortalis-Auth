@@ -1,0 +1,98 @@
+# Auth endpoints: register, login, refresh, logout
+# Use the environment dropdown in the HTTP Client (e.g., local/dev/prod) to set {{host}} and defaults.
+
+# Defaults for quick manual runs in IntelliJ (override as needed)
+
+### Register a new account (captures access/refresh tokens)
+POST {{host}}/auth/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "displayName": "{{displayName}}"
+}
+
+> {%
+  try {
+    const data = JSON.parse(response.body);
+    client.global.set("accessToken", data.accessToken);
+    client.global.set("refreshToken", data.refreshToken);
+    client.log('Saved accessToken and refreshToken from register');
+  } catch (e) {
+    client.log('Response not JSON or missing tokens');
+  }
+%}
+
+### Login without MFA (captures tokens)
+POST {{host}}/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "emailOrUsername": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+  try {
+    const data = JSON.parse(response.body);
+    client.global.set("accessToken", data.accessToken);
+    client.global.set("refreshToken", data.refreshToken);
+    client.log('Saved accessToken and refreshToken from login');
+  } catch (e) {
+    client.log('Response not JSON or missing tokens');
+  }
+%}
+
+### Login with MFA code (captures tokens)
+POST {{host}}/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "emailOrUsername": "{{email}}",
+  "password": "{{password}}",
+  "mfaCode": "{{mfaCode}}"
+}
+
+> {%
+  try {
+    const data = JSON.parse(response.body);
+    client.global.set("accessToken", data.accessToken);
+    client.global.set("refreshToken", data.refreshToken);
+    client.log('Saved accessToken and refreshToken from login (MFA)');
+  } catch (e) {
+    client.log('Response not JSON or missing tokens');
+  }
+%}
+
+### Refresh access token using {{refreshToken}} (captures new tokens)
+POST {{host}}/auth/refresh
+Content-Type: application/json
+Accept: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+> {%
+  try {
+    const data = JSON.parse(response.body);
+    client.global.set("accessToken", data.accessToken);
+    client.global.set("refreshToken", data.refreshToken);
+    client.log('Saved rotated accessToken and refreshToken from refresh');
+  } catch (e) {
+    client.log('Response not JSON or missing tokens');
+  }
+%}
+
+### Logout (revokes {{refreshToken}})
+POST {{host}}/auth/logout
+Content-Type: application/json
+Accept: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}

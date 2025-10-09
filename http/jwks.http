@@ -1,0 +1,6 @@
+# JWKS endpoint
+
+### Get JSON Web Key Set
+GET {{host}}/.well-known/jwks.json
+Accept: application/json
+

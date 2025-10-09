@@ -1,0 +1,27 @@
+# MFA (TOTP) endpoints
+# Note: For this demo controller, you pass accountId explicitly in query params.
+# Fill {{accountId}} from your DB or application logs, then run setup/enable/disable.
+
+### Setup TOTP for an account (captures secret and otpauth URL)
+POST {{host}}/auth/mfa/totp/setup?accountId={{accountId}}
+Accept: application/json
+
+> {%
+  try {
+    const data = JSON.parse(response.body);
+    client.global.set("totpSecret", data.secretBase32);
+    client.global.set("otpauthUrl", data.otpauthUrl);
+    client.log('Saved totpSecret and otpauthUrl');
+  } catch (e) {
+    client.log('Response not JSON');
+  }
+%}
+
+### Enable TOTP for an account
+POST {{host}}/auth/mfa/totp/enable?accountId={{accountId}}&code={{mfaCode}}
+Accept: application/json
+
+### Disable TOTP for an account
+POST {{host}}/auth/mfa/totp/disable?accountId={{accountId}}&code={{mfaCode}}
+Accept: application/json
+
