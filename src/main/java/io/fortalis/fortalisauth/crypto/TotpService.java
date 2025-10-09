@@ -1,4 +1,3 @@
-// crypto/TotpService.java
 package io.fortalis.fortalisauth.crypto;
 
 import java.nio.ByteBuffer;
@@ -28,12 +27,19 @@ public class TotpService {
         return false;
     }
 
+    /**
+     * For tests: generate the 6-digit code for a specific epoch second.
+     */
+    public String generateForTime(String base32Secret, long epochSecond) {
+        long timestep = 30L;
+        long t = epochSecond / timestep;
+        return generateCode(base32Secret, t);
+    }
+
     public String otpauthUrl(String issuer, String label, String base32Secret) {
         return "otpauth://totp/" + urlEncode(issuer) + ":" + urlEncode(label) +
                 "?secret=" + base32Secret + "&issuer=" + urlEncode(issuer);
     }
-
-    // ---- helpers ----
 
     private static String generateCode(String base32Secret, long counter) {
         byte[] key = base32Decode(base32Secret);

@@ -15,14 +15,14 @@ Accept: application/json
 }
 
 > {%
-  try {
-    const data = JSON.parse(response.body);
-    client.global.set("accessToken", data.accessToken);
-    client.global.set("refreshToken", data.refreshToken);
-    client.log('Saved accessToken and refreshToken from register');
-  } catch (e) {
-    client.log('Response not JSON or missing tokens');
-  }
+    try {
+        const data = JSON.parse(response.body);
+        client.global.set("accessToken", data.accessToken);
+        client.global.set("refreshToken", data.refreshToken);
+        client.log('Saved accessToken and refreshToken from register');
+    } catch (e) {
+        client.log('Response not JSON or missing tokens');
+    }
 %}
 
 ### Login without MFA (captures tokens)
@@ -36,14 +36,14 @@ Accept: application/json
 }
 
 > {%
-  try {
-    const data = JSON.parse(response.body);
-    client.global.set("accessToken", data.accessToken);
-    client.global.set("refreshToken", data.refreshToken);
-    client.log('Saved accessToken and refreshToken from login');
-  } catch (e) {
-    client.log('Response not JSON or missing tokens');
-  }
+    try {
+        const data = JSON.parse(response.body);
+        client.global.set("accessToken", data.accessToken);
+        client.global.set("refreshToken", data.refreshToken);
+        client.log('Saved accessToken and refreshToken from login');
+    } catch (e) {
+        client.log('Response not JSON or missing tokens');
+    }
 %}
 
 ### Login with MFA code (captures tokens)
@@ -58,14 +58,14 @@ Accept: application/json
 }
 
 > {%
-  try {
-    const data = JSON.parse(response.body);
-    client.global.set("accessToken", data.accessToken);
-    client.global.set("refreshToken", data.refreshToken);
-    client.log('Saved accessToken and refreshToken from login (MFA)');
-  } catch (e) {
-    client.log('Response not JSON or missing tokens');
-  }
+    try {
+        const data = JSON.parse(response.body);
+        client.global.set("accessToken", data.accessToken);
+        client.global.set("refreshToken", data.refreshToken);
+        client.log('Saved accessToken and refreshToken from login (MFA)');
+    } catch (e) {
+        client.log('Response not JSON or missing tokens');
+    }
 %}
 
 ### Refresh access token using {{refreshToken}} (captures new tokens)
@@ -78,14 +78,14 @@ Accept: application/json
 }
 
 > {%
-  try {
-    const data = JSON.parse(response.body);
-    client.global.set("accessToken", data.accessToken);
-    client.global.set("refreshToken", data.refreshToken);
-    client.log('Saved rotated accessToken and refreshToken from refresh');
-  } catch (e) {
-    client.log('Response not JSON or missing tokens');
-  }
+    try {
+        const data = JSON.parse(response.body);
+        client.global.set("accessToken", data.accessToken);
+        client.global.set("refreshToken", data.refreshToken);
+        client.log('Saved rotated accessToken and refreshToken from refresh');
+    } catch (e) {
+        client.log('Response not JSON or missing tokens');
+    }
 %}
 
 ### Logout (revokes {{refreshToken}})

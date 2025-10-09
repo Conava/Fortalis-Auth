@@ -7,6 +7,6 @@ import org.springframework.context.annotation.Configuration;
  * Registers @ConfigurationProperties classes.
  */
 @Configuration
-@EnableConfigurationProperties(AuthJwtProperties.class)
+@EnableConfigurationProperties({AuthJwtProperties.class, CryptoProperties.class})
 public class PropsConfig {
 }
