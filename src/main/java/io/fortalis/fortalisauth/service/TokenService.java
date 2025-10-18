@@ -26,26 +26,21 @@ public class TokenService {
     private final AuthJwtProperties props;
     private final RefreshTokenRepository refreshTokens;
     private final AccountMfaRepository mfas;
+    private final AccountRepository accounts;
 
-    public record Pair(String accessToken, String refreshToken, long expiresInSeconds) {
+    public record Pair(String accessToken, String refreshToken, long expiresInSeconds, UUID accountId, String displayName) {
+    }
+
+    @Transactional
+    public Pair issueTokens(Account account) {
+        return issueTokensInternal(account.getId(), account.getDisplayName());
     }
 
     @Transactional
     public Pair issueTokens(UUID accountId) {
-        boolean mfa = mfas.findByAccountId(accountId).map(AccountMfa::isEnabled).orElse(false);
-        String access = jwtService.createAccessToken(accountId, mfa);
-
-        String refresh = randomToken();
-        String refreshHash = hash(refresh);
-        RefreshToken row = new RefreshToken();
-        row.setAccountId(accountId);
-        row.setTokenHash(refreshHash);
-        row.setExpiresTs(Instant.now().plus(props.getRefreshTtl()));
-        row.setRevoked(false);
-        refreshTokens.save(row);
-
-        long ttl = props.getAccessTtl().toSeconds();
-        return new Pair(access, refresh, ttl);
+        Account account = accounts.findById(accountId)
+                .orElseThrow(() -> ApiException.unauthorized("account_missing", "Account not found."));
+        return issueTokensInternal(account.getId(), account.getDisplayName());
     }
 
     @Transactional
@@ -58,7 +53,9 @@ public class TokenService {
         // Rotate
         row.setRevoked(true);
         refreshTokens.save(row);
-        return issueTokens(row.getAccountId());
+        Account account = accounts.findById(row.getAccountId())
+                .orElseThrow(() -> ApiException.unauthorized("account_missing", "Account not found."));
+        return issueTokensInternal(account.getId(), account.getDisplayName());
     }
 
     @Transactional
@@ -87,5 +84,22 @@ public class TokenService {
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    private Pair issueTokensInternal(UUID accountId, String displayName) {
+        boolean mfa = mfas.findByAccountId(accountId).map(AccountMfa::isEnabled).orElse(false);
+        String access = jwtService.createAccessToken(accountId, mfa);
+
+        String refresh = randomToken();
+        String refreshHash = hash(refresh);
+        RefreshToken row = new RefreshToken();
+        row.setAccountId(accountId);
+        row.setTokenHash(refreshHash);
+        row.setExpiresTs(Instant.now().plus(props.getRefreshTtl()));
+        row.setRevoked(false);
+        refreshTokens.save(row);
+
+        long ttl = props.getAccessTtl().toSeconds();
+        return new Pair(access, refresh, ttl, accountId, displayName);
     }
 }

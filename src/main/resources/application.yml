@@ -14,7 +14,7 @@ spring:
     properties:
       hibernate:
         jdbc:
-          time_zone: UTC
+          '[time_zone]': UTC
 
 auth:
   jwt:
@@ -28,8 +28,8 @@ auth:
 logging:
   level:
     root: INFO
-    io.fortalis.fortalisauth: DEBUG
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
+    '[io.fortalis.fortalisauth]': DEBUG
+    '[org.springframework.security]': DEBUG
+    '[org.hibernate.SQL]': DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"

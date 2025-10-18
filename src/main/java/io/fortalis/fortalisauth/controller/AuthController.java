@@ -31,8 +31,8 @@ public class AuthController {
     public AuthResponse register(@Valid @RequestBody RegisterRequest req) {
         log.debug("Registering new account for Email: {}, Display Name: {}", req.email(), req.displayName());
         Account account = accounts.register(req.email(), req.password(), req.displayName());
-        var pair = tokens.issueTokens(account.getId());
-        return new AuthResponse(pair.accessToken(), pair.refreshToken(), pair.expiresInSeconds());
+        var pair = tokens.issueTokens(account);
+        return new AuthResponse(pair.accessToken(), pair.refreshToken(), pair.expiresInSeconds(), pair.accountId(), pair.displayName());
     }
 
     @PostMapping("/login")
@@ -43,31 +43,31 @@ public class AuthController {
         rateLimiter.checkAndConsume("login:" + principalKey, 5, 900);
 
         log.debug("Login attempt for: {} from {}", req.emailOrUsername(), ip);
-        Account a = accounts.findByEmailOrUsername(req.emailOrUsername())
+        Account account = accounts.findByEmailOrUsername(req.emailOrUsername())
                 .orElseThrow(() -> ApiException.unauthorized("invalid_credentials", "Bad credentials"));
-        if (a.getPasswordHash() == null || !accounts.matches(req.password(), a.getPasswordHash())) {
+        if (account.getPasswordHash() == null || !accounts.matches(req.password(), account.getPasswordHash())) {
             throw ApiException.unauthorized("invalid_credentials", "Bad credentials");
         }
-        boolean mfaEnabled = mfas.findByAccountId(a.getId()).map(m -> m.isEnabled() && "TOTP".equals(m.getType())).orElse(false);
+        boolean mfaEnabled = mfas.findByAccountId(account.getId()).map(m -> m.isEnabled() && "TOTP".equals(m.getType())).orElse(false);
         if (mfaEnabled) {
             String code = req.mfaCode();
             if (code == null || code.isBlank())
                 throw ApiException.unauthorized("mfa_required", "TOTP code required");
-            boolean ok = mfaService.verify(a.getId(), code);
+            boolean ok = mfaService.verify(account.getId(), code);
             if (!ok) {
                 throw ApiException.unauthorized("mfa_invalid", "Invalid MFA code");
             }
         }
         rateLimiter.clear("login:" + principalKey);
-        var pair = tokens.issueTokens(a.getId());
-        return new AuthResponse(pair.accessToken(), pair.refreshToken(), pair.expiresInSeconds());
+        var pair = tokens.issueTokens(account);
+        return new AuthResponse(pair.accessToken(), pair.refreshToken(), pair.expiresInSeconds(), pair.accountId(), pair.displayName());
     }
 
     @PostMapping("/refresh")
     public AuthResponse refresh(@Valid @RequestBody RefreshRequest req) {
         log.debug("Token refresh attempt for refresh token: {}", req.refreshToken());
         var pair = tokens.refresh(req.refreshToken());
-        return new AuthResponse(pair.accessToken(), pair.refreshToken(), pair.expiresInSeconds());
+        return new AuthResponse(pair.accessToken(), pair.refreshToken(), pair.expiresInSeconds(), pair.accountId(), pair.displayName());
     }
 
     @PostMapping("/logout")
