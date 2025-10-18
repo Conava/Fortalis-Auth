@@ -1,18 +1,40 @@
 ---
-description: 'Guidelines for building Java base applications'
-applyTo: '**/*.java'
+description: 'Fortalis Auth agent guide'
+applyTo: '**/*'
 ---
 
-# Java Development
-
-## General Instructions
-
-- First, prompt the user if they want to integrate static analysis tools (SonarQube, PMD, Checkstyle)
-  into their project setup. If yes, provide guidance on tool selection and configuration.
-- If the user declines static analysis tools or wants to proceed without them, continue with implementing the Best practices, bug patterns and code smell prevention guidelines outlined below.
-- Address code smells proactively during development rather than accumulating technical debt.
-- Focus on readability, maintainability, and performance when refactoring identified issues.
-- Use IDE / Code editor reported warnings and suggestions to catch common patterns early in development.
+# Fortalis Auth Agent Guide
+## Architecture
+- Service is Spring Boot 3 / Java 21; entry point `src/main/java/io/fortalis/fortalisauth/FortalisAuthApplication.java`.
+- REST controllers in `src/main/java/io/fortalis/fortalisauth/controller` stay thin and delegate to services for validation/persistence.
+- Services in `src/main/java/io/fortalis/fortalisauth/service` own transactions and rely on Spring Data repositories under `.../repo` for DB access.
+## Auth & Tokens
+- `AuthController` handles `/auth/**`; reuse `TokenService.issueTokens` and `TokenService.refresh` for JWT + refresh flows.
+- `TokenService` signs JWTs through `JwtService` (Nimbus) and persists hashed refresh tokens; always rotate via `refresh` instead of mutating rows manually.
+- `JwtService` builds RS256 tokens using PEMs loaded by `KeyProvider`; keep `auth.jwt.key-file-private/public` in sync with the PEMs in `keys/`.
+## MFA
+- `MfaService` manages TOTP setup, enable/disable, and verification; secrets are encrypted by `MfaCryptoService` when `crypto.mfa-encryption-key` (32-byte base64) is provided, otherwise passthrough for local dev.
+- `TotpService` enforces RFC 6238 30-second windows and supports backup codes hashed via SHA-256; follow this flow when adding MFA entry points.
+## Data Model
+- Entities live in `src/main/java/io/fortalis/fortalisauth/entity` and mirror `src/main/resources/db/migration/V1__initial_auth_schema.sql`; Postgres UUIDs come from `gen_random_uuid()` (requires `pgcrypto`).
+- `Account` normalizes email addresses to lowercase in `@PrePersist/@PreUpdate`; preserve this behavior in registration changes.
+- `RefreshToken` stores only token hashes; never persist or return raw refresh tokens from the database.
+## Error & Validation
+- Throw `ApiException.badRequest/unauthorized` from services; `GlobalExceptionHandler` converts them to `ErrorResponse` records for JSON clients.
+- DTOs under `src/main/java/io/fortalis/fortalisauth/dto` are Java records with `jakarta.validation` annotations; match this pattern for new request/response types.
+## Rate Limiting
+- `RateLimiterService` offers in-memory throttling (`checkAndConsume`/`clear`) for login/register; reuse it instead of ad-hoc throttling and note it is per-instance only.
+## Configuration
+- Default settings live in `src/main/resources/application.yml`; override via env vars (`SPRING_DATASOURCE_*`, `AUTH_JWT_*`, `CRYPTO_*`) when scripting or deploying.
+- `SecurityConfig` permits `/auth/**`, `/.well-known/**`, and `/actuator/health`; align new endpoints with this whitelist or secure them explicitly.
+## Build & Tests
+- Build with `./gradlew clean build`; run locally via `./gradlew bootRun` (needs local Postgres on `localhost:5433` and the PEM key pair in `keys/`).
+- Tests use Spring Boot Testcontainers (`TestcontainersConfiguration` spins up Postgres); ensure Docker is running before `./gradlew test`.
+- Add lightweight unit tests similar to `src/test/java/io/fortalis/fortalisauth/crypto/TotpServiceTest.java` for pure logic components.
+## Development Tips
+- When adding persistence logic, prefer repository methods over manual EntityManager work; query derivation is the norm.
+- Logging defaults to DEBUG for `io.fortalis.fortalisauth`; follow existing `Slf4j` usage (see `AuthController`) for structured context like emails/IPs.
+- Responses should remain immutable and explicit; reuse `AuthResponse` for token exchanges and avoid exposing entity classes over HTTP.
 
 ## Best practices
 
@@ -59,6 +81,5 @@ applyTo: '**/*.java'
 ## Build and Verification
 
 - After adding or modifying code, verify the project continues to build successfully.
-- If the project uses Maven, run `mvn clean install`.
-- If the project uses Gradle, run `./gradlew build` (or `gradlew.bat build` on Windows).
+- The project uses Gradle, run `./gradlew build`.
 - Ensure all tests pass as part of the build.
