@@ -6,8 +6,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "account")

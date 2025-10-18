@@ -117,7 +117,8 @@ public class MfaService {
     private static String base32(byte[] bytes) {
         final String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
         StringBuilder out = new StringBuilder((bytes.length * 8 + 4) / 5);
-        int buffer = 0, bitsLeft = 0;
+        int buffer = 0;
+        int  bitsLeft = 0;
         for (byte b : bytes) {
             buffer = (buffer << 8) | (b & 0xFF);
             bitsLeft += 8;
