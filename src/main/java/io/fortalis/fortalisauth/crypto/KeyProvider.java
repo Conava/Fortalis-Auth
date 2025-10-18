@@ -2,6 +2,7 @@ package io.fortalis.fortalisauth.crypto;
 
 import io.fortalis.fortalisauth.config.AuthJwtProperties;
 
+import java.io.IOException;
 import java.nio.file.*;
 import java.security.*;
 import java.security.interfaces.*;
@@ -35,8 +36,7 @@ public class KeyProvider {
     public RSAPublicKey publicKey() {
         return publicKey;
     }
-
-    private static RSAPrivateKey loadPrivateKey(Path pemPath) throws Exception {
+    private static RSAPrivateKey loadPrivateKey(Path pemPath) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         String pem = Files.readString(pemPath)
                 .replace("-----BEGIN PRIVATE KEY-----", "")
                 .replace("-----END PRIVATE KEY-----", "")
@@ -47,8 +47,7 @@ public class KeyProvider {
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(der);
         return (RSAPrivateKey) kf.generatePrivate(spec);
     }
-
-    private static RSAPublicKey loadPublicKey(Path pemPath) throws Exception {
+    private static RSAPublicKey loadPublicKey(Path pemPath) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         String pem = Files.readString(pemPath)
                 .replace("-----BEGIN PUBLIC KEY-----", "")
                 .replace("-----END PUBLIC KEY-----", "")
