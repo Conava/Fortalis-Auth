@@ -1,9 +1,4 @@
-# Auth endpoints: register, login, refresh, logout
-# Use the environment dropdown in the HTTP Client (e.g., local/dev/prod) to set {{host}} and defaults.
-
-# Defaults for quick manual runs in IntelliJ (override as needed)
-
-### Register a new account (captures access/refresh tokens)
+### @name register
 POST {{host}}/auth/register
 Content-Type: application/json
 Accept: application/json
@@ -15,38 +10,34 @@ Accept: application/json
 }
 
 > {%
+    function setTokens(data, tag) {
+        if (!data || !data.accessToken) return false;
+        client.env.set("accessToken", data.accessToken);
+        client.env.set("refreshToken", data.refreshToken || "");
+        client.env.set("authHeader", "Bearer " + data.accessToken);
+        client.env.set("displayName", data.displayName || "");
+        if (typeof data.mfaEnabled === "boolean") client.env.set("mfaEnabled", String(data.mfaEnabled));
+        const now = Math.floor(Date.now()/1000);
+        const exp = now + (data.expiresInSeconds || 0);
+        client.env.set("expiresAtEpoch", String(exp));
+        client.log("[" + tag + "] saved tokens; mfaEnabled=" + (data.mfaEnabled ?? "n/a") + "; expiresAtEpoch=" + exp);
+        return true;
+    }
+
+    const TAG = "register";
+    client.log("[" + TAG + "] " + request.method + " " + request.url + " -> " + response.status + " " + response.statusText);
+    client.log("[" + TAG + "] request.body=" + (request.body || ""));
+    client.log("[" + TAG + "] response.body=" + response.body);
+
     try {
         const data = JSON.parse(response.body);
-        client.global.set("accessToken", data.accessToken);
-        client.global.set("refreshToken", data.refreshToken);
-        client.log('Saved accessToken and refreshToken from register');
+        if (!setTokens(data, TAG)) client.log("[" + TAG + "] response missing tokens");
     } catch (e) {
-        client.log('Response not JSON or missing tokens');
+        client.log("[" + TAG + "] non-JSON response");
     }
 %}
 
-### Login without MFA (captures tokens)
-POST {{host}}/auth/login
-Content-Type: application/json
-Accept: application/json
-
-{
-  "emailOrUsername": "{{email}}",
-  "password": "{{password}}"
-}
-
-> {%
-    try {
-        const data = JSON.parse(response.body);
-        client.global.set("accessToken", data.accessToken);
-        client.global.set("refreshToken", data.refreshToken);
-        client.log('Saved accessToken and refreshToken from login');
-    } catch (e) {
-        client.log('Response not JSON or missing tokens');
-    }
-%}
-
-### Login with MFA code (captures tokens)
+### @name login_one_shot
 POST {{host}}/auth/login
 Content-Type: application/json
 Accept: application/json
@@ -58,17 +49,129 @@ Accept: application/json
 }
 
 > {%
+    function setTokensOrTicket(data, tag) {
+        if (data && data.accessToken) {
+            client.env.set("accessToken", data.accessToken);
+            client.env.set("refreshToken", data.refreshToken || "");
+            client.env.set("authHeader", "Bearer " + data.accessToken);
+            client.env.set("displayName", data.displayName || "");
+            if (typeof data.mfaEnabled === "boolean") client.env.set("mfaEnabled", String(data.mfaEnabled));
+            const now = Math.floor(Date.now()/1000);
+            const exp = now + (data.expiresInSeconds || 0);
+            client.env.set("expiresAtEpoch", String(exp));
+            client.log("[" + tag + "] saved tokens; mfaEnabled=" + (data.mfaEnabled ?? "n/a") + "; expiresAtEpoch=" + exp);
+            return;
+        }
+        if (data && data.loginTicket) {
+            client.env.set("loginTicket", data.loginTicket);
+            const factors = Array.isArray(data.allowedFactors) ? data.allowedFactors : [];
+            client.env.set("allowedFactors", factors.join(","));
+            client.log("[" + tag + "] saved loginTicket; allowedFactors=" + factors.join(","));
+            return;
+        }
+        client.log("[" + tag + "] no tokens and no loginTicket found");
+    }
+
+    const TAG = "login(deprecated)";
+    client.log("[" + TAG + "] " + request.method + " " + request.url + " -> " + response.status + " " + response.statusText);
+    client.log("[" + TAG + "] request.body=" + (request.body || ""));
+    client.log("[" + TAG + "] response.body=" + response.body);
+
     try {
         const data = JSON.parse(response.body);
-        client.global.set("accessToken", data.accessToken);
-        client.global.set("refreshToken", data.refreshToken);
-        client.log('Saved accessToken and refreshToken from login (MFA)');
+        setTokensOrTicket(data, TAG);
     } catch (e) {
-        client.log('Response not JSON or missing tokens');
+        client.log("[" + TAG + "] non-JSON response");
     }
 %}
 
-### Refresh access token using {{refreshToken}} (captures new tokens)
+### @name login_start
+POST {{host}}/auth/login/start
+Content-Type: application/json
+Accept: application/json
+
+{
+  "emailOrUsername": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+    function setTokensOrTicket(data, tag) {
+        if (data && data.accessToken) {
+            client.env.set("accessToken", data.accessToken);
+            client.env.set("refreshToken", data.refreshToken || "");
+            client.env.set("authHeader", "Bearer " + data.accessToken);
+            client.env.set("displayName", data.displayName || "");
+            if (typeof data.mfaEnabled === "boolean") client.env.set("mfaEnabled", String(data.mfaEnabled));
+            const now = Math.floor(Date.now()/1000);
+            const exp = now + (data.expiresInSeconds || 0);
+            client.env.set("expiresAtEpoch", String(exp));
+            client.log("[" + tag + "] saved tokens; mfaEnabled=" + (data.mfaEnabled ?? "n/a") + "; expiresAtEpoch=" + exp);
+            return;
+        }
+        if (data && data.loginTicket) {
+            client.env.set("loginTicket", data.loginTicket);
+            const factors = Array.isArray(data.allowedFactors) ? data.allowedFactors : [];
+            client.env.set("allowedFactors", factors.join(","));
+            client.log("[" + tag + "] saved loginTicket; allowedFactors=" + factors.join(","));
+            return;
+        }
+        client.log("[" + tag + "] no tokens and no loginTicket found");
+    }
+
+    const TAG = "login/start";
+    client.log("[" + TAG + "] " + request.method + " " + request.url + " -> " + response.status + " " + response.statusText);
+    client.log("[" + TAG + "] request.body=" + (request.body || ""));
+    client.log("[" + TAG + "] response.body=" + response.body);
+
+    try {
+        const data = JSON.parse(response.body);
+        setTokensOrTicket(data, TAG);
+    } catch (e) {
+        client.log("[" + TAG + "] non-JSON response");
+    }
+%}
+
+### @name login_complete_totp
+POST {{host}}/auth/login/complete
+Content-Type: application/json
+Accept: application/json
+
+{
+  "loginTicket": "{{loginTicket}}",
+  "factor": "TOTP",
+  "code": "{{mfaCode}}"
+}
+
+> {%
+    const TAG = "login/complete";
+    client.log("[" + TAG + "] " + request.method + " " + request.url + " -> " + response.status + " " + response.statusText);
+    client.log("[" + TAG + "] request.body=" + (request.body || ""));
+    client.log("[" + TAG + "] response.body=" + response.body);
+
+    try {
+        const data = JSON.parse(response.body);
+        if (data && data.accessToken) {
+            client.env.set("accessToken", data.accessToken);
+            client.env.set("refreshToken", data.refreshToken || "");
+            client.env.set("authHeader", "Bearer " + data.accessToken);
+            client.env.set("displayName", data.displayName || "");
+            if (typeof data.mfaEnabled === "boolean") client.env.set("mfaEnabled", String(data.mfaEnabled));
+            const now = Math.floor(Date.now()/1000);
+            const exp = now + (data.expiresInSeconds || 0);
+            client.env.set("expiresAtEpoch", String(exp));
+            client.log("[" + TAG + "] saved tokens; mfaEnabled=" + (data.mfaEnabled ?? "n/a") + "; expiresAtEpoch=" + exp);
+            client.env.set("loginTicket", "");
+            client.env.set("allowedFactors", "");
+        } else {
+            client.log("[" + TAG + "] response missing tokens");
+        }
+    } catch (e) {
+        client.log("[" + TAG + "] non-JSON response");
+    }
+%}
+
+### @name refresh
 POST {{host}}/auth/refresh
 Content-Type: application/json
 Accept: application/json
@@ -78,17 +181,32 @@ Accept: application/json
 }
 
 > {%
+    const TAG = "refresh";
+    client.log("[" + TAG + "] " + request.method + " " + request.url + " -> " + response.status + " " + response.statusText);
+    client.log("[" + TAG + "] request.body=" + (request.body || ""));
+    client.log("[" + TAG + "] response.body=" + response.body);
+
     try {
         const data = JSON.parse(response.body);
-        client.global.set("accessToken", data.accessToken);
-        client.global.set("refreshToken", data.refreshToken);
-        client.log('Saved rotated accessToken and refreshToken from refresh');
+        if (data && data.accessToken) {
+            client.env.set("accessToken", data.accessToken);
+            client.env.set("refreshToken", data.refreshToken || "");
+            client.env.set("authHeader", "Bearer " + data.accessToken);
+            client.env.set("displayName", data.displayName || "");
+            if (typeof data.mfaEnabled === "boolean") client.env.set("mfaEnabled", String(data.mfaEnabled));
+            const now = Math.floor(Date.now()/1000);
+            const exp = now + (data.expiresInSeconds || 0);
+            client.env.set("expiresAtEpoch", String(exp));
+            client.log("[" + TAG + "] rotated tokens; mfaEnabled=" + (data.mfaEnabled ?? "n/a") + "; expiresAtEpoch=" + exp);
+        } else {
+            client.log("[" + TAG + "] response missing tokens");
+        }
     } catch (e) {
-        client.log('Response not JSON or missing tokens');
+        client.log("[" + TAG + "] non-JSON response");
     }
 %}
 
-### Logout (revokes {{refreshToken}})
+### @name logout
 POST {{host}}/auth/logout
 Content-Type: application/json
 Accept: application/json
@@ -96,3 +214,17 @@ Accept: application/json
 {
   "refreshToken": "{{refreshToken}}"
 }
+
+> {%
+    const TAG = "logout";
+    client.log("[" + TAG + "] " + request.method + " " + request.url + " -> " + response.status + " " + response.statusText);
+    client.log("[" + TAG + "] request.body=" + (request.body || ""));
+    client.log("[" + TAG + "] response.body=" + response.body);
+    client.env.set("accessToken", "");
+    client.env.set("refreshToken", "");
+    client.env.set("authHeader", "");
+    client.env.set("expiresAtEpoch", "");
+    client.env.set("loginTicket", "");
+    client.env.set("allowedFactors", "");
+    client.log("[" + TAG + "] cleared tokens and transient variables");
+%}

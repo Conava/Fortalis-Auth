@@ -1,27 +1,55 @@
-# MFA (TOTP) endpoints
-# Note: For this demo controller, you pass accountId explicitly in query params.
-# Fill {{accountId}} from your DB or application logs, then run setup/enable/disable.
-
-### Setup TOTP for an account (captures secret and otpauth URL)
-POST {{host}}/auth/mfa/totp/setup?accountId={{accountId}}
+### @name mfa_totp_setup
+POST {{host}}/auth/mfa/totp/setup
+Authorization: {{authHeader}}
 Accept: application/json
 
 > {%
-  try {
-    const data = JSON.parse(response.body);
-    client.global.set("totpSecret", data.secretBase32);
-    client.global.set("otpauthUrl", data.otpauthUrl);
-    client.log('Saved totpSecret and otpauthUrl');
-  } catch (e) {
-    client.log('Response not JSON');
-  }
+    const TAG = "mfa/totp/setup";
+    client.log("[" + TAG + "] " + request.method + " " + request.url + " -> " + response.status + " " + response.statusText);
+    client.log("[" + TAG + "] request.body=" + (request.body || ""));
+    client.log("[" + TAG + "] response.body=" + response.body);
+
+    try {
+        const data = JSON.parse(response.body);
+        if (data && data.secretBase32) {
+            client.env.set("totpSecret", data.secretBase32);
+            client.log("[" + TAG + "] saved totpSecret=" + data.secretBase32);
+        }
+        if (data && data.otpauthUrl) {
+            client.env.set("otpauthUrl", data.otpauthUrl);
+            client.log("[" + TAG + "] saved otpauthUrl=" + data.otpauthUrl);
+        }
+        if (data && Array.isArray(data.backupCodes)) {
+            client.env.set("backupCodes", data.backupCodes.join(","));
+            client.log("[" + TAG + "] saved backupCodes (" + data.backupCodes.length + " codes)");
+        }
+    } catch (e) {
+        client.log("[" + TAG + "] non-JSON response");
+    }
 %}
 
-### Enable TOTP for an account
-POST {{host}}/auth/mfa/totp/enable?accountId={{accountId}}&code={{mfaCode}}
+### @name mfa_totp_enable
+POST {{host}}/auth/mfa/totp/enable?code={{mfaCode}}
+Authorization: {{authHeader}}
 Accept: application/json
 
-### Disable TOTP for an account
-POST {{host}}/auth/mfa/totp/disable?accountId={{accountId}}&code={{mfaCode}}
+> {%
+    const TAG = "mfa/totp/enable";
+    client.log("[" + TAG + "] " + request.method + " " + request.url + " -> " + response.status + " " + response.statusText);
+    client.log("[" + TAG + "] request.body=" + (request.body || ""));
+    client.log("[" + TAG + "] response.body=" + response.body);
+    client.env.set("mfaEnabled", "true");
+%}
+
+### @name mfa_totp_disable
+POST {{host}}/auth/mfa/totp/disable?code={{mfaCode}}
+Authorization: {{authHeader}}
 Accept: application/json
 
+> {%
+    const TAG = "mfa/totp/disable";
+    client.log("[" + TAG + "] " + request.method + " " + request.url + " -> " + response.status + " " + response.statusText);
+    client.log("[" + TAG + "] request.body=" + (request.body || ""));
+    client.log("[" + TAG + "] response.body=" + response.body);
+    client.env.set("mfaEnabled", "false");
+%}
