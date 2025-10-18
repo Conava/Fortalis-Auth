@@ -23,7 +23,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(reg -> reg
-                        .requestMatchers("/auth/**", "/.well-known/**", "/actuator/health").permitAll()
+                        .requestMatchers("/auth/register", "/auth/login", "/auth/logout", "/auth/refresh").permitAll()
+                        .requestMatchers("/.well-known/**", "/actuator/health").permitAll()
+                        .requestMatchers("/auth/mfa/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(AbstractHttpConfigurer::disable)
