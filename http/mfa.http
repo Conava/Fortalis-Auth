@@ -5,26 +5,33 @@ Accept: application/json
 
 > {%
     const TAG = "mfa/totp/setup";
-    client.log("[" + TAG + "] " + request.method + " " + request.url + " -> " + response.status + " " + response.statusText);
-    client.log("[" + TAG + "] request.body=" + (request.body || ""));
-    client.log("[" + TAG + "] response.body=" + response.body);
+    const pretty = v => { try { return typeof v === "string" ? v : JSON.stringify(v, null, 2); } catch { return "[unserializable]"; } };
+    const s = v => { try { return String(v); } catch { return "[unprintable]"; } };
+    const bodyOf = (r) => typeof r.body === "object" ? r.body : (() => { try { return JSON.parse(r.body); } catch { return r.body; } })();
 
-    try {
-        const data = JSON.parse(response.body);
-        if (data && data.secretBase32) {
-            client.env.set("totpSecret", data.secretBase32);
-            client.log("[" + TAG + "] saved totpSecret=" + data.secretBase32);
-        }
-        if (data && data.otpauthUrl) {
-            client.env.set("otpauthUrl", data.otpauthUrl);
-            client.log("[" + TAG + "] saved otpauthUrl=" + data.otpauthUrl);
-        }
-        if (data && Array.isArray(data.backupCodes)) {
-            client.env.set("backupCodes", data.backupCodes.join(","));
-            client.log("[" + TAG + "] saved backupCodes (" + data.backupCodes.length + " codes)");
-        }
-    } catch (e) {
-        client.log("[" + TAG + "] non-JSON response");
+    client.log(`[${TAG}] ${s(request.method)} ${s(request.url)} -> ${s(response.status)} ${s(response.statusText)}`);
+    client.log(`[${TAG}] request.body=${pretty(request.body)}`);
+
+    const body = bodyOf(response);
+    client.log(`[${TAG}] response.body=${pretty(body)}`);
+
+    // Controller returns MfaTotpSetupResponse { secret (JSON key), otpauthUrl, backupCodes }
+    const secret = body?.secret ?? body?.secretBase32 ?? "";
+    if (secret) {
+        client.global.set("totpSecret", secret);
+        client.log(`[${TAG}] saved totpSecret=${secret}`);
+    } else {
+        client.log(`[${TAG}] no TOTP secret in response`);
+    }
+
+    if (body?.otpauthUrl) {
+        client.global.set("otpauthUrl", body.otpauthUrl);
+        client.log(`[${TAG}] saved otpauthUrl=${body.otpauthUrl}`);
+    }
+
+    if (Array.isArray(body?.backupCodes)) {
+        client.global.set("backupCodes", body.backupCodes.join(","));
+        client.log(`[${TAG}] saved backupCodes (${body.backupCodes.length} codes)`);
     }
 %}
 
@@ -35,10 +42,23 @@ Accept: application/json
 
 > {%
     const TAG = "mfa/totp/enable";
-    client.log("[" + TAG + "] " + request.method + " " + request.url + " -> " + response.status + " " + response.statusText);
-    client.log("[" + TAG + "] request.body=" + (request.body || ""));
-    client.log("[" + TAG + "] response.body=" + response.body);
-    client.env.set("mfaEnabled", "true");
+    const pretty = v => { try { return typeof v === "string" ? v : JSON.stringify(v, null, 2); } catch { return "[unserializable]"; } };
+    const s = v => { try { return String(v); } catch { return "[unprintable]"; } };
+    const bodyOf = (r) => typeof r.body === "object" ? r.body : (() => { try { return JSON.parse(r.body); } catch { return r.body; } })();
+
+    client.log(`[${TAG}] ${s(request.method)} ${s(request.url)} -> ${s(response.status)} ${s(response.statusText)}`);
+    client.log(`[${TAG}] request.body=${pretty(request.body)}`);
+
+    // Endpoint returns 200 with empty body on success
+    const body = bodyOf(response);
+    client.log(`[${TAG}] response.body=${pretty(body)}`);
+
+    if (response.status >= 200 && response.status < 300) {
+        client.global.set("mfaEnabled", "true");
+        client.log(`[${TAG}] set mfaEnabled=true`);
+    } else {
+        client.log(`[${TAG}] enable failed (status=${response.status})`);
+    }
 %}
 
 ### @name mfa_totp_disable
@@ -48,8 +68,34 @@ Accept: application/json
 
 > {%
     const TAG = "mfa/totp/disable";
-    client.log("[" + TAG + "] " + request.method + " " + request.url + " -> " + response.status + " " + response.statusText);
-    client.log("[" + TAG + "] request.body=" + (request.body || ""));
-    client.log("[" + TAG + "] response.body=" + response.body);
-    client.env.set("mfaEnabled", "false");
+    const pretty = v => { try { return typeof v === "string" ? v : JSON.stringify(v, null, 2); } catch { return "[unserializable]"; } };
+    const s = v => { try { return String(v); } catch { return "[unprintable]"; } };
+    const bodyOf = (r) => typeof r.body === "object" ? r.body : (() => { try { return JSON.parse(r.body); } catch { return r.body; } })();
+
+    client.log(`[${TAG}] ${s(request.method)} ${s(request.url)} -> ${s(response.status)} ${s(response.statusText)}`);
+    client.log(`[${TAG}] request.body=${pretty(request.body)}`);
+
+    const body = bodyOf(response);
+    client.log(`[${TAG}] response.body=${pretty(body)}`);
+
+    if (response.status >= 200 && response.status < 300) {
+        client.global.set("mfaEnabled", "false");
+        client.log(`[${TAG}] set mfaEnabled=false`);
+    } else {
+        client.log(`[${TAG}] disable failed (status=${response.status})`);
+    }
+%}
+
+### @name show_mfa_state  (helper to inspect current globals)
+GET {{host}}/auth/mfa/state
+Authorization: {{authHeader}}
+Accept: application/json
+
+> {%
+    const TAG = "mfa/state(debug)";
+    const s = v => { try { return String(v); } catch { return "[unprintable]"; } };
+    client.log(`[${TAG}] mfaEnabled=${s(client.global.get("mfaEnabled"))}`);
+    client.log(`[${TAG}] totpSecret=${s(client.global.get("totpSecret"))}`);
+    client.log(`[${TAG}] otpauthUrl=${s(client.global.get("otpauthUrl"))}`);
+    client.log(`[${TAG}] backupCodes=${s(client.global.get("backupCodes"))}`);
 %}
