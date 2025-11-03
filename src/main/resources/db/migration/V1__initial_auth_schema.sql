@@ -54,8 +54,10 @@ CREATE TABLE IF NOT EXISTS account_settings
     lang             VARCHAR(8) NOT NULL DEFAULT 'en',
     marketing_opt_in BOOLEAN    NOT NULL DEFAULT FALSE,
     newsletter_opt_in BOOLEAN   NOT NULL DEFAULT FALSE,
-    last_server      VARCHAR(32)
+    last_server_id   VARCHAR(32)
 );
+
+-- Refresh tokens for session management
 CREATE TABLE IF NOT EXISTS refresh_token
 (
     id           UUID PRIMARY KEY     DEFAULT gen_random_uuid(),
@@ -69,6 +71,17 @@ CREATE TABLE IF NOT EXISTS refresh_token
 );
 CREATE INDEX IF NOT EXISTS idx_refresh_account ON refresh_token (account_id);
 
+-- Game servers and player-server associations
+CREATE TABLE IF NOT EXISTS server
+(
+    id            VARCHAR(32) PRIMARY KEY, -- 'EU-DE', 'NA-US-EA', etc.
+    region        VARCHAR(16) NOT NULL,    -- 'EU', 'NA', 'AP', etc.
+    display_name  VARCHAR(64) NOT NULL,    -- 'Europe - Germany', 'North America - East'
+    status        VARCHAR(16) NOT NULL DEFAULT 'ACTIVE', -- 'ACTIVE', 'MAINTENANCE', 'RETIRED'
+    player_count  INT,
+    created_ts    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
 CREATE TABLE IF NOT EXISTS player_server
 (
     id             UUID PRIMARY KEY     DEFAULT gen_random_uuid(),
@@ -78,15 +91,5 @@ CREATE TABLE IF NOT EXISTS player_server
     last_login_ts  TIMESTAMPTZ,
     CONSTRAINT uq_account_server UNIQUE (account_id, server_id)
     );
-CREATE INDEX idx_player_server_account ON server_player (account_id);
-CREATE INDEX idx_player_server_server ON server_player (server_id);
-
-CREATE TABLE IF NOT EXISTS server
-(
-    id            VARCHAR(32) PRIMARY KEY, -- 'EU-DE', 'NA-US-EA', etc.
-    region        VARCHAR(16) NOT NULL,    -- 'EU', 'NA', 'AP', etc.
-    display_name  VARCHAR(64) NOT NULL,    -- 'Europe - Germany', 'North America - East'
-    status        VARCHAR(16) NOT NULL DEFAULT 'ACTIVE', -- 'ACTIVE', 'MAINTENANCE', 'RETIRED'
-    player_count  INT,
-    created_ts    TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+CREATE INDEX idx_player_server_account ON player_server (account_id);
+CREATE INDEX idx_player_server_server ON player_server (server_id);

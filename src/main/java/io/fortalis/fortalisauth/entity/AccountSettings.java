@@ -22,7 +22,7 @@ public class AccountSettings {
     @Column(nullable = false, length = 8)
     private String lang = "en";
 
-    private String lastServerName;
+    private String lastServerId;
 
     private boolean marketingOptIn;
 
