@@ -1,6 +1,6 @@
 package io.fortalis.fortalisauth.service;
 
-import io.fortalis.fortalisauth.web.ApiException;
+import io.fortalis.fortalisauth.web.RateLimitExceededException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,11 +35,12 @@ class RateLimiterServiceTest {
         rateLimiterService.checkAndConsume(key, maxAttempts, windowSeconds);
         rateLimiterService.checkAndConsume(key, maxAttempts, windowSeconds);
 
-        var exception = assertThrows(ApiException.class,
+        var exception = assertThrows(RateLimitExceededException.class,
                 () -> rateLimiterService.checkAndConsume(key, maxAttempts, windowSeconds));
 
-        assertEquals("rate_limited", exception.code);
-        assertTrue(exception.getMessage().contains("Too many attempts"));
+        assertEquals("rate-limit-exceeded", exception.getType());
+        assertTrue(exception.getMessage().contains("Too many requests"));
+        assertTrue(exception.getRetryAfterSeconds() > 0);
     }
 
     @Test
@@ -65,7 +66,7 @@ class RateLimiterServiceTest {
 
         rateLimiterService.checkAndConsume(key, maxAttempts, windowSeconds);
 
-        assertThrows(ApiException.class,
+        assertThrows(RateLimitExceededException.class,
                 () -> rateLimiterService.checkAndConsume(key, maxAttempts, windowSeconds));
 
         rateLimiterService.clear(key);
@@ -88,7 +89,7 @@ class RateLimiterServiceTest {
         rateLimiterService.checkAndConsume(key, maxAttempts, windowSeconds);
 
         // Should be rate limited immediately
-        assertThrows(ApiException.class,
+        assertThrows(RateLimitExceededException.class,
                 () -> rateLimiterService.checkAndConsume(key, maxAttempts, windowSeconds));
 
         // Wait for window to expire
@@ -104,7 +105,7 @@ class RateLimiterServiceTest {
         var maxAttempts = 0;
         var windowSeconds = 60;
 
-        assertThrows(ApiException.class,
+        assertThrows(RateLimitExceededException.class,
                 () -> rateLimiterService.checkAndConsume(key, maxAttempts, windowSeconds));
     }
 
@@ -123,7 +124,7 @@ class RateLimiterServiceTest {
                 try {
                     rateLimiterService.checkAndConsume(key, maxAttempts, windowSeconds);
                     successCount.incrementAndGet();
-                } catch (ApiException e) {
+                } catch (RateLimitExceededException e) {
                     failureCount.incrementAndGet();
                 }
             });

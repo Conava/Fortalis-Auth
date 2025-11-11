@@ -1,12 +1,14 @@
 package io.fortalis.fortalisauth.it;
 
-import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+
+import java.util.UUID;
+
+import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 final class AuthRegisterIntegrationTest extends BaseIntegrationTest {
 
@@ -46,7 +48,8 @@ final class AuthRegisterIntegrationTest extends BaseIntegrationTest {
                 .accept(MediaType.APPLICATION_JSON)
                 .content(payload))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error", is("email_taken")));
+            .andExpect(jsonPath("$.type", is("https://auth.fortalis.game/errors/email_taken")))
+            .andExpect(jsonPath("$.status", is(400)));
     }
 
     @Test

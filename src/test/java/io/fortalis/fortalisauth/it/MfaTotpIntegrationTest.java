@@ -1,18 +1,18 @@
 package io.fortalis.fortalisauth.it;
 
-import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fortalis.fortalisauth.it.support.TotpTestUtil;
-
-import java.util.UUID;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
+
+import java.util.UUID;
+
+import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 final class MfaTotpIntegrationTest extends BaseIntegrationTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -37,9 +37,9 @@ final class MfaTotpIntegrationTest extends BaseIntegrationTest {
                         .header("Authorization", "Bearer " + access)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.secret", not(emptyString())))
+                .andExpect(jsonPath("$.secretBase32", not(emptyString())))
                 .andReturn();
-        String secret = MAPPER.readTree(setup.getResponse().getContentAsString()).get("secret").asText();
+        String secret = MAPPER.readTree(setup.getResponse().getContentAsString()).get("secretBase32").asText();
         String code = TotpTestUtil.currentCodeFromBase32Secret(secret);
 
         // enable
@@ -106,7 +106,8 @@ final class MfaTotpIntegrationTest extends BaseIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .param("code", "000000"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error", is("totp_invalid")));
+                .andExpect(jsonPath("$.type", is("https://auth.fortalis.game/errors/totp_invalid")))
+                .andExpect(jsonPath("$.status", is(400)));
     }
 
     @Test
@@ -128,7 +129,7 @@ final class MfaTotpIntegrationTest extends BaseIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andReturn();
-        String secret = MAPPER.readTree(setup.getResponse().getContentAsString()).get("secret").asText();
+        String secret = MAPPER.readTree(setup.getResponse().getContentAsString()).get("secretBase32").asText();
         String good = TotpTestUtil.currentCodeFromBase32Secret(secret);
 
         mockMvc.perform(post("/auth/mfa/totp/enable")
@@ -156,6 +157,7 @@ final class MfaTotpIntegrationTest extends BaseIntegrationTest {
                                     { "loginTicket":"%s", "factor":"TOTP", "code":"123456" }
                                 """.formatted(ticket)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error", is("mfa_invalid")));
+                .andExpect(jsonPath("$.type", is("https://auth.fortalis.game/errors/mfa_invalid")))
+                .andExpect(jsonPath("$.status", is(401)));
     }
 }

@@ -1,14 +1,19 @@
 package io.fortalis.fortalisauth.service;
 
-import io.fortalis.fortalisauth.web.ApiException;
+import io.fortalis.fortalisauth.web.RateLimitExceededException;
+import org.springframework.stereotype.Service;
+
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.springframework.stereotype.Service;
 
 @Service
 public class RateLimiterService {
-    private static class Bucket { int count; long resetEpoch; }
+    private static class Bucket {
+        int count;
+        long resetEpoch;
+    }
+
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
     public void checkAndConsume(String key, int maxAttempts, int windowSeconds) {
@@ -20,7 +25,12 @@ public class RateLimiterService {
                 b.resetEpoch = now + windowSeconds;
             }
             if (b.count >= maxAttempts) {
-                throw ApiException.unauthorized("rate_limited", "Too many attempts. Try later.");
+                long retryAfter = b.resetEpoch - now;
+                throw new RateLimitExceededException(
+                        "rate-limit-exceeded",
+                        "Too many requests. Please try again later.",
+                        retryAfter
+                );
             }
             b.count++;
         }
@@ -30,4 +40,3 @@ public class RateLimiterService {
         buckets.remove(key);
     }
 }
-

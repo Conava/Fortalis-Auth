@@ -1,13 +1,14 @@
 package io.fortalis.fortalisauth.it;
 
-import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 
 import java.util.UUID;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
+import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 final class AuthLoginIntegrationTest extends BaseIntegrationTest {
 
@@ -53,7 +54,9 @@ final class AuthLoginIntegrationTest extends BaseIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content(("{ \"emailOrUsername\":\"%s\", \"password\":\"wrong!\" }").formatted(email)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error", is("invalid_credentials")));
+                .andExpect(jsonPath("$.type", is("https://auth.fortalis.game/errors/invalid_credentials")))
+                .andExpect(jsonPath("$.status", is(401)))
+                .andExpect(jsonPath("$.detail", is("Bad credentials")));
     }
 
     @Test
@@ -63,6 +66,7 @@ final class AuthLoginIntegrationTest extends BaseIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content("{ \"emailOrUsername\":\"nobody@example.com\", \"password\":\"irrelevant\" }"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error", is("invalid_credentials")));
+                .andExpect(jsonPath("$.type", is("https://auth.fortalis.game/errors/invalid_credentials")))
+                .andExpect(jsonPath("$.status", is(401)));
     }
 }

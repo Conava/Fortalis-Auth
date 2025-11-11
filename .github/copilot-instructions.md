@@ -35,18 +35,46 @@ applyTo: '**/*'
 - Use database constraints (unique, not null, check) to enforce data integrity at the database level.
 ## Error & Validation
 
-- Throw `ApiException.badRequest/unauthorized` from services; `GlobalExceptionHandler` converts them to `ErrorResponse` records for JSON clients. If you decide to adopt RFC 7807 Problem Details, update the handler and DTOs consistently across the codebase; otherwise continue using `ErrorResponse`.
+- **RFC 7807 Problem Details**: All errors return RFC 7807 Problem Details with `Content-Type: application/problem+json`.
+- Throw `ApiException` from services with factory methods: `ApiException.badRequest()`, `.unauthorized()`, `.forbidden()`, `.notFound()`, `.conflict()`, `.tooManyRequests()`, `.internalServerError()`.
+- Each exception includes a `type` URI (e.g., `https://auth.fortalis.game/errors/invalid-credentials`), HTTP status, title, and detail message.
+- `GlobalExceptionHandler` converts all exceptions to RFC 7807 responses consistently.
 - DTOs under `src/main/java/io/fortalis/fortalisauth/dto` are Java records with `jakarta.validation` annotations; match this pattern for new request/response types.
-- Prefer a consistent error shape; RFC 7807 is recommended for future adoption, but current implementation returns `ErrorResponse`.
+- Validation errors return `type: .../validation-error` with all validation messages joined.
 - Never expose internal error details (stack traces, database errors) to clients in production.
 - Log errors with appropriate severity levels; consider adding correlation IDs for tracing (not yet implemented here).
 - Validation should happen at the controller level using `@Valid` and custom validators when needed.
+
+**Example Problem Detail response:**
+```json
+{
+  "type": "https://auth.fortalis.game/errors/invalid-credentials",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Bad credentials",
+  "instance": "/auth/login"
+}
+```
 ## Rate Limiting
 
 - `RateLimiterService` offers in-memory throttling (`checkAndConsume`/`clear`) for login/register; reuse it instead of ad-hoc throttling and note it is per-instance only.
+- Rate limit violations throw `RateLimitExceededException`, returning `429 Too Many Requests` with a `Retry-After` header (RFC 6585).
+- The response includes `retryAfter` seconds in the Problem Details body.
 - Consider distributed rate limiting (Redis-based) for production deployments with multiple instances.
 - Implement different rate limits for different endpoints based on sensitivity.
-- Current implementation throws `401 Unauthorized` when rate limits are exceeded; for production, prefer `429 Too Many Requests` and include a `Retry-After` header (update handlers and tests together when changing this behavior).
+
+**Example rate limit response:**
+```json
+{
+  "type": "https://auth.fortalis.game/errors/rate-limit-exceeded",
+  "title": "Too Many Requests",
+  "status": 429,
+  "detail": "Too many requests. Please try again later.",
+  "instance": "/auth/login",
+  "retryAfter": 60
+}
+```
+Headers: `Retry-After: 60`
 ## Configuration
 
 - Default settings live in `src/main/resources/application.yml`; override via env vars (`SPRING_DATASOURCE_*`, `AUTH_JWT_*`, `CRYPTO_*`) when scripting or deploying.
@@ -462,10 +490,12 @@ Naming Guidelines:
 6. Consider indexing strategy
 
 **Handling a new exception type:**
-1. Create specific exception class extending appropriate base
-2. Add handler method in `GlobalExceptionHandler`
-3. Return appropriate HTTP status and error response
-4. Add tests for error scenarios
+1. Use existing `ApiException` factory methods (`.badRequest()`, `.unauthorized()`, etc.) or create specialized exception like `RateLimitExceededException`
+2. If custom exception needed, implement `toProblemDetail(String requestPath)` method
+3. Add `@ExceptionHandler` method in `GlobalExceptionHandler` returning `ResponseEntity<ProblemDetail>`
+4. Ensure proper HTTP status code and RFC 7807 format
+5. Add tests for error scenarios
+6. Document the error type in README's error handling section
 
 ---
 
