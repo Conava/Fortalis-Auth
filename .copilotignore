@@ -1,0 +1,28 @@
+# Ignore build artifacts and generated files
+/build/
+/.gradle/
+/out/
+/target/
+
+# IDE metadata
+/.idea/
+*.iml
+
+# Local environment and secrets
+keys/
+.env
+*.pem
+
+# Node/npm cache if present
+node_modules/
+
+# Log files
+*.log
+
+# Coverage and reports
+/coverage/
+/build/reports/
+
+# Docker stuff
+**/.venv/
+**/.pytest_cache/
