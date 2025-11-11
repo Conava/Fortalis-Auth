@@ -93,7 +93,7 @@ rm keys/tmp.key
 
 ### 3) Configure the app
 
-Configure the App in `src/main/resources/application.properties`
+Configure the app in `src/main/resources/application.yml` (or via environment variables). See defaults in that file.
 
 ### 4) Run the app
 
