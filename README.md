@@ -1,7 +1,7 @@
 # Fortalis Auth
 
 A lightweight **authentication service** for the Fortalis game.
-Built with **Spring Boot 3**, **Java 21**, **PostgreSQL**, **Flyway**, and **Nimbus JOSE/JWT**.
+Built with **Spring Boot 4**, **Java 21**, **PostgreSQL**, **Flyway**, and **Nimbus JOSE/JWT**.
 It issues **RS256-signed JWT access tokens**, rotates **refresh tokens**, supports **TOTP 2FA**, and exposes a **JWKS**
 endpoint so region/game backends can verify tokens **without** calling Auth.
 
