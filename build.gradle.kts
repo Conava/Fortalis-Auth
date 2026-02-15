@@ -38,14 +38,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-database-postgresql")
 
-    // NOTE: Check if Boot 4 manages these versions now. If not, keep explicit versions.
     implementation("org.bouncycastle:bcprov-jdk18on:1.82")
     implementation("org.bouncycastle:bcpkix-jdk18on:1.82")
-
-    // JWT + JOSE
-    // NOTE: Boot 4 'security-oauth2-resource-server' likely brings a compatible version of this.
-    // Recommend removing version to let Boot manage it, or remove entirely if transitive.
-    implementation("com.nimbusds:nimbus-jose-jwt:10.5")
 
     // Dev
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -71,3 +65,8 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+tasks.withType<JavaCompile> {
+    options.compilerArgs.addAll(listOf("-Xlint:deprecation", "-Xlint:unchecked"))
+}
+

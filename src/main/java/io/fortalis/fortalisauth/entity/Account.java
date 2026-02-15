@@ -17,11 +17,9 @@ public class Account {
     @GeneratedValue
     private UUID id;
 
-    // Added nullable = false to match DB constraint
-    @Column(unique = true, length = 255, nullable = false)
+    @Column(unique = true, nullable = false)
     private String email;
 
-    // Likely NOT NULL in DB too
     @Column(nullable = false)
     private String passwordHash;
 
