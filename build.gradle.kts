@@ -1,5 +1,5 @@
 plugins {
-    java
+    id("java")
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
 }
@@ -24,42 +24,53 @@ repositories {
     mavenCentral()
 }
 
+extra["testcontainersVersion"] = "2.0.3"
+
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-webmvc")
-    implementation("org.springframework.boot:spring-boot-starter-tomcat")
+    // Spring Boot Starters
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+
+    // OAuth2 Specifics
     implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
-    // Optional now, used later for Google/Apple
     implementation("org.springframework.boot:spring-boot-starter-security-oauth2-client")
 
-    implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-flyway")
-    implementation("org.flywaydb:flyway-database-postgresql")
-
+    // Crypto Libs (BouncyCastle)
     implementation("org.bouncycastle:bcprov-jdk18on:1.82")
     implementation("org.bouncycastle:bcpkix-jdk18on:1.82")
 
-    // Dev
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    compileOnly("org.projectlombok:lombok")
-    annotationProcessor("org.projectlombok:lombok")
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    // Flyway
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
+    implementation("org.flywaydb:flyway-database-postgresql")
 
-    // DB driver
+    // Tools & Utilities
+    compileOnly("org.projectlombok:lombok")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    annotationProcessor("org.projectlombok:lombok")
+
+    // Runtime
     runtimeOnly("org.postgresql:postgresql")
 
-    // Tests
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    // Testing
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.springframework.boot:spring-boot-starter-security-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    testImplementation(platform("org.testcontainers:testcontainers-bom:2.0.3"))
+    // Testcontainers
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testImplementation("org.testcontainers:testcontainers-postgresql")
+
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("org.testcontainers:testcontainers-bom:${property("testcontainersVersion")}")
+    }
 }
 
 tasks.withType<Test> {
@@ -69,4 +80,3 @@ tasks.withType<Test> {
 tasks.withType<JavaCompile> {
     options.compilerArgs.addAll(listOf("-Xlint:deprecation", "-Xlint:unchecked"))
 }
-
