@@ -17,18 +17,23 @@ public class Account {
     @GeneratedValue
     private UUID id;
 
-    @Column(unique = true, length = 255)
+    @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(nullable = false)
     private String passwordHash;
+
     private boolean emailVerified;
+
+    @Column(nullable = false)
     private Instant createdTs;
+
     private String displayName;
 
     @PrePersist
     void prePersist() {
         if (createdTs == null) createdTs = Instant.now();
-        if (email != null) email = email.toLowerCase(); // normalize to lowercase
+        if (email != null) email = email.toLowerCase();
     }
 
     @PreUpdate
@@ -36,4 +41,3 @@ public class Account {
         if (email != null) email = email.toLowerCase();
     }
 }
-

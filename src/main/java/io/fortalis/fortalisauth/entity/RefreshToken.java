@@ -28,8 +28,10 @@ public class RefreshToken {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String tokenHash;
 
+    @Column(nullable = false)
     private Instant issuedTs;
 
+    @Column(nullable = false)
     private Instant expiresTs;
 
     private String userAgent;
