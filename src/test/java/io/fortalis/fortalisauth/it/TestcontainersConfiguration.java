@@ -12,14 +12,10 @@ class TestcontainersConfiguration {
     @Bean
     @ServiceConnection
     PostgreSQLContainer postgresContainer() {
-        try (PostgreSQLContainer postgresContainer = new PostgreSQLContainer(DockerImageName.parse("postgres:17-alpine"))
+        return new PostgreSQLContainer(DockerImageName.parse("postgres:17-alpine"))
                 .withDatabaseName("fortalis_auth")
                 .withUsername("fortalis")
-                .withPassword("fortalis")) {
-            return postgresContainer;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+                .withPassword("fortalis");
     }
 
 }
